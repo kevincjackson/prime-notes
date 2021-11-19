@@ -16,19 +16,44 @@
   - api/info/n                    -> {} | nil
 4. DONE How to Make Your Own Binary Format
   - x Ruby, TODO Go, TODO Elixir
-5. Data Storage
+5. DONE Data Storage
   - x For read based file compression, store 4 x 1B range of 1,3,7,9's. -> 50MB files.
-  - Create files.
-6. Set Database for purpose?
-  - Try
-    - Binary File: Use `primes_0B.bin` (pdat taken)
+6. Try Databases for best speed
+    - X Binary File: Use 4 bin files `primes_0B.bin` (pdat taken)
+      - TODO Speed Tests: 
     - SQLite: `smallprimes.db`
+      - No bueno! 
+      - TODO
+      - Non-Indexed DB Size: 4000MB with 4B numbers, Multirow query: 6s
+      - Non-Indexed DB Size:  900MB with 1B numbers, Multirow query: 2s
+      -     Indexed DB Size: 2300MB with 1B numbers, Multirow query: 0.3s
+      - Non-Indexed DB Size:    1MB with 1M numbers, Multirow query: 0.3s
     - Redis `?`
-7. API
-  - Web:          `is n`, `info n`, `list`, `pos i`, `rand` 
-  - CLI: sprimes  `is n`, `info n`, `list`, `pos i`, `rand`
-  - Query:        `from`, `to`, `from-pos`, `to-pos`
-  - Info:         -> `{ prime, position }` 
+      - TODO Speed Tests
+7. API: DONE
+  - CONSTANT: MAXNUMBER: 10**9 // YES - Storage
+  - Web:          `is n`, `info n`, `list`, `pos p`, `rand`, `before n`, `after n`
+  - CLI: sprimes  `is n`, `info n`, `list`, `pos p`, `rand`, `before n`, `after n`
+  - List Query:   `[list] from [pos] x to y limit l`
+  - Info:         -> `{ number: int, is_prime: bool, pos: int }` 
+
+
+## File Transfer Speeds
+- From Harddrive: small (4k) files take the longest
+  - 7200 RPM drive: 80-160 MB/s
+  - SSD: 25-300 MB/s
+  - USB 2.0: 25-30 MB/s
+  - USB 3.0: 25-300 MB/s
+- From Internet:  
+  - Unit: Mbps (Mega bits / second)
+  - Mbps:  8 Mb = 1 MB, divide Mbps by 8 to get MBps 
+  - By state: Slowest 59 Mbps, Avg 127 mbps. => 7 - 15 MB / s
+- Reference: A file with 1B c1379 primes is 50MB.
+- Analysis: 
+  - Inital Download 200MB download -> ~ 15-30/s
+  - Read file(s) from disk 200MB -> 1-6 
+    - From my SSD drive: 1.4s
+  - Regenerate: ? TODO: Create benchmarks.
 
 
 ## SQLite, Put into Separate Note
@@ -39,6 +64,10 @@
 - File based. 'yourfile.db'. You can use as your own filetype.
 - Competes with `fopen` not enterprise dabases. Benefit: faster than `fopen` for blobs < 100k.
 - Use case: 1 db total, 1 concurrent writer, 1 file data. Example testing, local caches, embedded data such as phones, cars, TV's.
+- Use `VACUUM;` after deleting lots of data. Sqllite does not automatically defragment data.
+- Inserting a blob / binary file: 
+  - `sqlite> CREATE TABLE images(name TEXT, type TEXT, img BLOB);`
+  - `sqlite> INSERT INTO images(name,type,img) VALUES('icon','jpeg',readfile('icon.jpg'));`
 
 
 ## Data Storage Options
@@ -59,20 +88,20 @@
 - App usage: in Go init 1B < 1s, 1T > 1s
   
 
-
 ## Explanation of the Projects
   - What did I learn
     - x Learn bit array storage and manipulation
     - x Learn Marshalling vs Serialization
     - x Learned hexdump
+    - x Decompressing a Billion bytes took 2.5 minutes in Ruby! Slow
   - Project: Finding Prime Numbers
     - Challenges: 
       - x Learn basic Go.
-      - Learn Go modules.
-      - Learn Go Big Numbers.
-      - Learn Go Persistance.
-      - Learn Go Writing a Command Line App 
-      - Learn Prime Search methods.
+      - x Learn Go modules.
+      - x Learn Go Big Numbers.
+      - x Learn Go Persistance.
+      - x Learn Go Writing a Command Line App 
+      - x Learn Prime Search methods.
       - Make a chart of bits to digits
       - Learning Bit Programming and Bit Sets
     - Mistakes: ?
@@ -460,32 +489,18 @@ prime.ScanUptoNoDb(int(math.Pow10(8))) // 8m35s FAN ON
 
 ## Wheel Factor Savings
 Need to write a program for this.
-| Primes | Primorial / Bits | Bytes | Work Saved % |
-| - | - | - | - |
-| 2,3 | 6 | ~1B | 3 / 6 = 50% |
-| 2-5 | 30 | ~3B | 22 / 30 = 73% |
-| 2-7 | 210 | ~26B | 52 / 210 = 76% |
-| 2-11 | 2,310 | ~288B | ? |
-| 2-13 | 30,030 | ~4KB | ? |
-| 2-17 | 510,510 | ~63KB | ? |
-| 2-19 | 9,699,690 | ~1.2MB | ? |
-| 2-23 | 223,092,870 | ~28MB | ? |
-| 2-29 | 6,469,693,230 | ~808MB | ? |
-| 2-31 | 200,560,490,130 | ~25GB | ? |
-| 2-37 | ? | ? | ? |
-| 2-41 | ? | ? | ? |
-| 2-43 | ? | ? | ? |
-| 2-47 | ? | ? | ? |
-| 2-53 | ? | ? | ? |
-| 2-59 | ? | ? | ? |
-| 2-61 | ? | ? | ? |
-| 2-67 | ? | ? | ? |
-| 2-71 | ? | ? | ? |
-| 2-73 | ? | ? | ? |
-| 2-79 | ? | ? | ? |
-| 2-83 | ? | ? | ? |
-| 2-89 | ? | ? | ? |
-| 2-97 | ? | ? | ? |
+| Primorial | Primes | Primorial / Bits | Bytes | Work Saved % |
+| - | - | - | - | - |
+| 1 | 2,3 | 6 | ~1B | 3 / 6 = 50% |
+| 2 | 2-5 | 30 | ~3B | 22 / 30 = 73% |
+| 3 | 2-7 | 210 | ~26B | 52 / 210 = 76% |
+| 4 | 2-11 | 2,310 | ~288B | ? |
+| 5 | 2-13 | 30,030 | ~4KB | ? |
+| 6 | 2-17 | 510,510 | ~63KB | ? |
+| 7 | 2-19 | 9,699,690 | ~1.2MB | ? |
+| 8 | 2-23 | 223,092,870 | ~28MB | ? |
+| 9 | 2-29 | 6,469,693,230 | ~808MB | ? |
+| 10 | 2-31 | 200,560,490,130 | ~25GB | ? |
 
 
 ## KJ Simple Storage Saver
@@ -504,8 +519,6 @@ Need to write a program for this.
 - ! Need to make tables for this in action.
 
 
-
-
 ## Serialization vs Marshal
 - Basic understanding:
   - Serialization: freeze drying data. JSON, XML, binary, YAML, etc for transport.  For example, Han Solo, was captured by ???, and needing to be frozen for transport to Jabba.  So serialization is freeze drying, and deserialization is rehydrating.
@@ -518,6 +531,7 @@ Need to write a program for this.
   - Java: <https://tech.deepumohan.com/2011/11/marshalling-in-java.html>
   - Haskell: <https://wiki.haskell.org/Foreign_Function_Interface#Marshalling_data>
   - C#: Transform a type from managed to native code. <https://docs.microsoft.com/en-us/dotnet/standard/native-interop/type-marshaling>
+
 
   ## Serialization
   - Big Endian: "abcdefgh" is transported as "abcdefgh"
